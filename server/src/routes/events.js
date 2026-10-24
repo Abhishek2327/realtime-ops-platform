@@ -4,6 +4,7 @@ import Device from '../models/Device.js';
 import Rule from '../models/Rule.js';
 import Incident from '../models/Incident.js';
 import evaluateRules from '../services/ruleEngine.js';
+import { eventBus } from '../utils/eventBus.js';
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.post('/', async (req, res) => {
   }
   try {
     // Verify device exists
-    const device = await Device.findOne({ deviceId });
+    let device = await Device.findOne({ deviceId });
     if (!device) {
       return res.status(404).json({ error: 'Device not found' });
     }
@@ -59,12 +60,16 @@ router.post('/', async (req, res) => {
     });
     await newEvent.save();
 
-    // Update device's lastSeenAt and status (only forward in time)
+    // Update device's lastSeenAt only if newer, and set status online
     if (!device.lastSeenAt || eventTime > device.lastSeenAt) {
       device.lastSeenAt = eventTime;
     }
     device.status = 'online';
     await device.save();
+
+    // Emit SSE updates for event and device
+    eventBus.emit('update', { kind: 'event', data: newEvent });
+    eventBus.emit('update', { kind: 'device', data: device });
 
     // Evaluate rules and create incidents as needed
     await evaluateRules({ event: newEvent, device });

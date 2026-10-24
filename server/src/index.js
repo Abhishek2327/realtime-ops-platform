@@ -1,4 +1,6 @@
 import express from 'express';
+
+import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
 import healthRouter from './routes/health.js';
 
@@ -14,14 +16,14 @@ app.use('/api', healthRouter);
 app.use('/api/devices', (await import('./routes/devices.js')).default);
 app.use('/api/events', (await import('./routes/events.js')).default);
 app.use('/api/rules', (await import('./routes/rules.js')).default);
-app.use('/api/incidents', (await import('./routes/incidents.js')).default);
+app.use('/api/stream', (await import('./routes/stream.js')).default);
 
 // Start server after attempting DB connection
-if (process.env.NODE_ENV !== 'test') {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // Started directly via node src/index.js
   (async () => {
     try {
       const conn = await connectDB();
-      // Set flag for health route; safe even if conn is null
       app.locals.dbConnected = conn?.connection?.readyState === 1;
     } catch (e) {
       console.error('Failed to initialize DB:', e);
@@ -32,7 +34,7 @@ if (process.env.NODE_ENV !== 'test') {
     });
   })();
 } else {
-  // In test mode, DB connection is handled by test setup
+  // Imported as module (e.g., in tests)
   app.locals.dbConnected = false;
   console.log('Test mode: server not listening');
 }

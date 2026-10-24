@@ -5,7 +5,7 @@ const deviceSchema = new mongoose.Schema({
   name: { type: String, required: true },
   location: { type: String, required: true },
   status: { type: String, enum: ['online', 'offline'], default: 'offline' },
-  lastSeenAt: { type: Date, default: Date.now },
+  lastSeenAt: { type: Date },
 });
 
 // Index for quick lookup by deviceId

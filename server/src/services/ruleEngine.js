@@ -1,6 +1,6 @@
 import Incident from '../models/Incident.js';
 import Rule from '../models/Rule.js';
-
+import { eventBus } from '../utils/eventBus.js';
 /**
  * Evaluate enabled rules against an incoming event and create incidents.
  * @param {Object} param0
@@ -54,11 +54,13 @@ export default async function evaluateRules({ event, device }) {
       };
 
       // Atomically insert only if not exists
-      await Incident.findOneAndUpdate(incidentFilter, update, {
+      const incident = await Incident.findOneAndUpdate(incidentFilter, update, {
         upsert: true,
         new: true,
         setDefaultsOnInsert: true,
       }).lean();
+      // Emit SSE update for incident (new or existing)
+      eventBus.emit('update', { kind: 'incident', data: incident });
     }
   } catch (err) {
     console.error('Rule evaluation error:', err);

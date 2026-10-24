@@ -94,27 +94,36 @@ describe('POST /api/events ingestion', () => {
     assert.equal(new Date(device.lastSeenAt).getTime(), now.getTime());
   });
 
-  test('duplicate eventId returns 409 and does not create second event', async () => {
+  test('older buffered event does not move lastSeenAt backwards', async () => {
+    const now = new Date();
+    const older = new Date(now.getTime() - 10000);
     await Device.create({ deviceId: 'device-001', name: 'D1', location: 'lab', status: 'offline' });
-    const payload = { temperature: 70 };
-    await request(app).post('/api/events').send({
-      eventId: 'evt-dup',
+    // Newer event
+    const resNew = await request(app).post('/api/events').send({
+      eventId: 'evt-new',
       deviceId: 'device-001',
       type: 'temperature',
-      timestamp: new Date().toISOString(),
-      payload,
+      timestamp: now.toISOString(),
+      payload: { temperature: 70 },
     });
-    const dupRes = await request(app).post('/api/events').send({
-      eventId: 'evt-dup',
+    assert.equal(resNew.status, 201);
+    // Older event
+    const resOld = await request(app).post('/api/events').send({
+      eventId: 'evt-old',
       deviceId: 'device-001',
       type: 'temperature',
-      timestamp: new Date().toISOString(),
-      payload,
+      timestamp: older.toISOString(),
+      payload: { temperature: 70 },
     });
-    assert.equal(dupRes.status, 409);
-    const count = await Event.countDocuments({ eventId: 'evt-dup' });
-    assert.equal(count, 1);
+    assert.equal(resOld.status, 201);
+    const device = await Device.findOne({ deviceId: 'device-001' }).lean();
+    assert.equal(new Date(device.lastSeenAt).getTime(), now.getTime());
+    const evNew = await Event.findOne({ eventId: 'evt-new' }).lean();
+    const evOld = await Event.findOne({ eventId: 'evt-old' }).lean();
+    assert.equal(new Date(evNew.timestamp).getTime(), now.getTime());
+    assert.equal(new Date(evOld.timestamp).getTime(), older.getTime());
   });
+
 
   test('temperature threshold rule triggers incident when condition met', async () => {
     await Device.create({ deviceId: 'device-001', name: 'D1', location: 'lab', status: 'offline' });
