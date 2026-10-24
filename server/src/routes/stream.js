@@ -1,6 +1,7 @@
 // server/src/routes/stream.js
 import { Router } from 'express';
 import { eventBus } from '../utils/eventBus.js';
+import Event from '../models/Event.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,7 +18,7 @@ const router = Router();
  * Sends an initial comment, then streams updates for events, devices, and incidents.
  * Heartbeat interval is controlled by SSE_HEARTBEAT_MS (ms). If missing/invalid defaults to 15000.
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -35,6 +36,19 @@ router.get('/', (req, res) => {
     res.write(`id: ${Date.now()}\n`);
     res.write(`data: ${data}\n\n`);
   };
+
+  // Replay past events if client supplies Last-Event-ID header (expects eventId)
+  const lastId = req.headers['last-event-id'];
+  if (lastId) {
+    try {
+      const pastEvents = await Event.find({ eventId: { $gt: lastId } }).sort({ eventId: 1 }).lean();
+      for (const ev of pastEvents) {
+        sendSSE('event', ev);
+      }
+    } catch (err) {
+      console.error('Error fetching replay events:', err);
+    }
+  }
 
   // Listener for the shared eventBus
   const busListener = ({ kind, data }) => {
