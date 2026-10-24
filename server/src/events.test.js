@@ -5,7 +5,7 @@ import { test, describe, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import process from 'process';
 process.env.NODE_ENV = 'test';
-process.env.TEST_MONGODB_URI = 'mongodb://127.0.0.1:27017/realtimeops_test';
+
 
 import mongoose from 'mongoose';
 import request from 'supertest';
