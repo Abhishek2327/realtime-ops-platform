@@ -11,7 +11,7 @@ const envPath = path.resolve(__dirname, '..', '..', '.env');
 dotenv.config({ path: envPath });
 
 export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI;
   if (!uri) {
     console.error('Configuration error: MONGODB_URI is not set in .env');
     return null; // Caller will handle missing DB
