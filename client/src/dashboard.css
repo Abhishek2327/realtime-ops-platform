@@ -1,0 +1,20 @@
+/* src/dashboard.css */
+:root {
+  --bg: #1a1b2d;
+  --text: #e0e0e0;
+  --accent: #4a90e2;
+  --card-bg: #25273c;
+  --border: #3a3b5c;
+}
+body {background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin:0;}
+.app-container {display:flex; min-height:100vh;}
+.sidebar {background: var(--card-bg); width:200px; padding:20px;}
+.sidebar h2 {color: var(--accent); margin-top:0;}
+.sidebar ul {list-style:none; padding:0;}
+.sidebar li {margin:10px 0;}
+.sidebar a {color: var(--text); text-decoration:none;}
+.sidebar a.active {font-weight:bold; color: var(--accent);}
+.main-content {flex:1; padding:20px;}
+.data-table {width:100%; border-collapse:collapse;}
+.data-table th, .data-table td {border:1px solid var(--border); padding:8px; text-align:left;}
+.loading, .error {padding:20px; font-size:1.2rem;}
