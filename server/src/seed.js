@@ -5,9 +5,8 @@ import Rule from './models/Rule.js';
 const seed = async () => {
   await connectDB();
 
-  // Clear existing demo data (optional)
-  await Device.deleteMany({});
-  await Rule.deleteMany({});
+//   await Device.deleteMany({});
+//   await Rule.deleteMany({});
 
   const devices = [
     { deviceId: 'dev-001', name: 'Temperature Sensor A', location: 'Warehouse 1', status: 'online' },
