@@ -1,0 +1,4 @@
+Test mode: server not listening
+In‑memory MongoDB started for tests
+✖ Replay with identical receivedAt timestamps (398.233042ms)
+✔ Event arriving during replay is not missed (23.026375ms)
