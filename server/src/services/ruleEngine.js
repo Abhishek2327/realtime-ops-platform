@@ -12,7 +12,7 @@ export default async function evaluateRules({ event, device }) {
     // Find enabled rules that either apply globally or to this device
     const ruleFilter = {
       enabled: true,
-      $or: [{ deviceId: undefined }, { deviceId: device.deviceId }],
+      $or: [{ deviceId: { $exists: false } }, { deviceId: device.deviceId }],
     };
     const rules = await Rule.find(ruleFilter).lean();
 

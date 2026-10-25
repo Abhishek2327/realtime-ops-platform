@@ -3,7 +3,7 @@ import cors from 'cors';
 
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
-import incidentsRouter from './routes/incidents.js';
+import { runOfflineChecks } from './services/offlineMonitor.js';
 import healthRouter from './routes/health.js';
 
 // Environment variables are loaded inside db.js via absolute path
@@ -35,6 +35,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      // Start offline detection checks (every minute) unless in test environment
+      if (process.env.NODE_ENV !== 'test') {
+        runOfflineChecks();
+        setInterval(runOfflineChecks, 60 * 1000);
+      }
     });
   })();
 } else {

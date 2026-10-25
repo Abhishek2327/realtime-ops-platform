@@ -34,17 +34,19 @@ router.get('/', async (req, res) => {
   }
 
   // Helper to send SSE formatted messages (default events only)
-  const sendSSE = (payload) => {
+  const sendSSE = (kind, payload) => {
     const data = JSON.stringify(payload);
-    // Stable id: if payload contains receivedAt and eventId use both, else fallback to Date.now()
+    // Generate a stable id if possible (event updates have eventId/receivedAt)
     let id = Date.now();
     if (payload && payload.receivedAt && payload.eventId) {
       const ts = new Date(payload.receivedAt).getTime();
       id = `${ts}-${payload.eventId}`;
     }
+    // SSE fields
     res.write(`id: ${id}\n`);
+    if (kind) res.write(`event: ${kind}\n`);
     res.write(`data: ${data}\n\n`);
-    console.log('SENT SSE', {id, payload});
+    console.log('SENT SSE', { id, kind, payload });
     if (typeof res.flush === 'function') { res.flush(); }
   };
 
@@ -52,12 +54,18 @@ router.get('/', async (req, res) => {
   const sentIds = new Set();
 
   // Live update listener: forward new events to the client
-  const busListener = (payload) => {
-    const evTime = payload.receivedAt instanceof Date ? payload.receivedAt.getTime() : new Date(payload.receivedAt).getTime();
-    const id = `${evTime}-${payload.eventId}`;
-    if (sentIds.has(id)) return;
-    sentIds.add(id);
-    sendSSE(payload);
+  const busListener = (msg) => {
+    // msg is { kind, data }
+    const { kind, data } = msg;
+    // Determine a unique id for deduplication (only for events that have timestamps)
+    let id = null;
+    if (data && data.receivedAt && data.eventId) {
+      const evTime = new Date(data.receivedAt).getTime();
+      id = `${evTime}-${data.eventId}`;
+    }
+    if (id && sentIds.has(id)) return;
+    if (id) sentIds.add(id);
+    sendSSE(kind, data);
   };
   eventBus.on('update', busListener);
   const detachLiveListener = () => eventBus.removeListener('update', busListener);
@@ -103,7 +111,7 @@ router.get('/', async (req, res) => {
       const id = `${evTime}-${ev.eventId}`;
       if (sentIds.has(id)) continue;
       sentIds.add(id);
-      sendSSE(ev);
+      sendSSE('event', ev);
     }
   }
 
